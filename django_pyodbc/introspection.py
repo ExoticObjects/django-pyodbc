@@ -1,5 +1,5 @@
 try:
-    from django.db.backends.base.introspection import BaseDatabaseIntrospection
+    from django.db.backends.base.introspection import BaseDatabaseIntrospection, TableInfo
 except:
     # import location prior to Django 1.8
     from django.db.backends import BaseDatabaseIntrospection
@@ -45,7 +45,13 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
             cursor.execute("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_SCHEMA = 'dbo'")
         else:
             cursor.execute("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'")
-        return [row[0] for row in cursor.fetchall()]
+            
+        tables = [dict(name=row[0], type='t') for row in cursor.fetchall()]
+        
+        if self.connection._DJANGO_VERSION >= 18:
+            return [TableInfo(name=name, type='t') for name in tables]
+
+        return tables
 
         # Or pyodbc specific:
         #return [row[2] for row in cursor.tables(tableType='TABLE')]
